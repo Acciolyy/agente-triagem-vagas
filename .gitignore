@@ -1,0 +1,6 @@
+*.log
+*.pyc
+.env
+.streamlit/
+__pycache__/
+criterios.txt
