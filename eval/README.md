@@ -50,6 +50,7 @@ conjunto. Para comparar execuções, use sempre o mesmo `vagas.csv`.
 - `rotular.md` — tabela para rotular as vagas 1 a 40 à mão (`A` ou `N`).
 - `rotular_extra.md` — mesma tabela para as vagas extras (41 em diante).
 - `avaliar.py` — roda o agente sobre um CSV rotulado e grava os resultados (`resultados_wwr.csv`); com `--retomar`, reaproveita as decisões já gravadas e só roda as vagas sem decisão.
+- `gerar_sinteticas.py` — gera o conjunto sintético de controle, `vagas_sinteticas.csv`.
 - `coletar_backendbr.py` — coleta a segunda fonte (issues do backend-br/vagas), `vagas_backendbr.csv` e `rotular_backendbr.md`.
 
 ## Segunda fonte: backend-br/vagas (GitHub)
@@ -68,3 +69,47 @@ impede medir precisão e recall. Para ter positivos, uma segunda fonte, em CSV s
   markdown, que a limpeza não converte.
 - **Arquivos:** `vagas_backendbr.csv` (`veredito_esperado` vazio até a rotulagem) e
   `rotular_backendbr.md`, numerado a partir de 60.
+
+## Conjunto sintético de controle
+
+As 80 vagas reais têm só 1 positivo, o que não permite medir precisão e recall. O
+`vagas_sinteticas.csv` (gerado por `gerar_sinteticas.py`) tem 16 vagas fictícias curtas, em
+inglês e português, de empresas inventadas, separadas das reais. Elas formam 8 pares de contraste: as duas vagas
+de um par são iguais exceto por um único fator (coluna `fator_variado`):
+
+| Par | Fator variado |
+|---|---|
+| p1 | nível: pleno vs "proven track record" |
+| p2 | nível: pleno vs Staff/Senior explícito |
+| p3 | Python explícito vs omitido (IA/ML, inglês) |
+| p4 | Python explícito vs omitido (dados/IA, português) |
+| p5 | local: remoto global vs só EUA (inglês) |
+| p6 | local: remoto global vs só EUA (português) |
+| p7 | stack: Django vs Java |
+| p8 | modelo de trabalho: 100% remoto (Brasil) vs híbrido em São Paulo |
+
+O `veredito_esperado` sai por construção, pelos critérios de `criterios_eval.txt`: o lado A de
+cada par atende aos critérios (8 "aplicar") e o lado B não (8 "não aplicar"). No p8, nenhum
+dos lados diz "aceitamos candidatos de qualquer país", para o modelo de trabalho ser o único
+fator.
+
+**Leitura estrita de "dados/IA com Python" (p3 e p4).** O lado B desses pares, que não menciona
+a linguagem, é "não aplicar": sem menção a Python, a vaga não satisfaz o critério. Uma leitura
+mais branda trataria o caso como indefinido, mas o conjunto adota a estrita.
+
+**Duas execuções, sem par junto.** Com lotes de 15, os dois lados de um par poderiam cair
+juntos e o agente veria o contraste. Por isso a coluna `execucao` divide o conjunto em duas
+execuções de 8 vagas, cada uma com 4 "aplicar" e 4 "não aplicar":
+
+- execução 1: lado A de p1 a p4 + lado B de p5 a p8;
+- execução 2: lado B de p1 a p4 + lado A de p5 a p8.
+
+O `avaliar.py` detecta a coluna `execucao` e roda cada valor como um lote separado (as demais
+colunas são ignoradas). Exemplo, com saída própria:
+
+```
+python eval/avaliar.py eval/vagas_sinteticas.csv eval/resultados_sinteticas.csv
+```
+
+Esse conjunto não substitui os reais: mostra se o agente reage a cada fator isolado, mas as
+vagas são mais limpas e curtas que as de verdade.

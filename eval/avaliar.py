@@ -13,6 +13,10 @@ Sem positivos, precisão e recall não são calculadas.
 Rodar da raiz do projeto: python eval/avaliar.py [--retomar] [vagas.csv] [resultados.csv]
 Padrão: eval/vagas.csv -> eval/resultados_wwr.csv
 
+Se o CSV tiver a coluna execucao (conjunto sintético), cada valor dela vira uma execução
+separada, na ordem do CSV, em vez de lotes de 15; assim os dois lados de um par de contraste
+nunca aparecem juntos para o agente. As demais colunas do CSV são ignoradas.
+
 Com --retomar, reaproveita as decisões já gravadas no CSV de resultados e roda o agente só
 nas vagas sem decisão. Os resultados são regravados a cada lote concluído.
 """
@@ -108,6 +112,14 @@ def gravar(resultados: list[dict], saida: Path) -> None:
         escritor.writerows(resultados)
 
 
+def dividir_em_lotes(vagas: list[dict]) -> list[list[dict]]:
+    """Lotes de LIMITE_RESULTADOS vagas, ou um lote por valor da coluna execucao, se existir."""
+    if vagas and "execucao" in vagas[0]:
+        execucoes = sorted({v["execucao"] for v in vagas})
+        return [[v for v in vagas if v["execucao"] == e] for e in execucoes]
+    return [vagas[i : i + LIMITE_RESULTADOS] for i in range(0, len(vagas), LIMITE_RESULTADOS)]
+
+
 def avaliar(vagas: list[dict], saida: Path, anteriores: dict) -> list[dict]:
     client = genai.Client(api_key=obter_api_key())
     config = types.GenerateContentConfig(
@@ -118,9 +130,8 @@ def avaliar(vagas: list[dict], saida: Path, anteriores: dict) -> list[dict]:
     print(f"{len(vagas) - len(pendentes)} decisões reaproveitadas; {len(pendentes)} a avaliar.")
 
     decisoes = {}  # link -> Avaliacao (a última decisão do agente vale)
-    for inicio in range(0, len(pendentes), LIMITE_RESULTADOS):
-        lote = pendentes[inicio : inicio + LIMITE_RESULTADOS]
-        print(f"Lote {inicio // LIMITE_RESULTADOS + 1}: {len(lote)} vagas")
+    for numero, lote in enumerate(dividir_em_lotes(pendentes), start=1):
+        print(f"Lote {numero}: {len(lote)} vagas")
         try:
             avaliacoes = triar_lote(client, config, lote)
         except errors.APIError as erro:
