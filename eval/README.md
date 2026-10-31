@@ -49,3 +49,22 @@ conjunto. Para comparar execuções, use sempre o mesmo `vagas.csv`.
 - `vagas.csv` — `titulo`, `link`, `descricao` e `veredito_esperado` (`aplicar` / `não aplicar`).
 - `rotular.md` — tabela para rotular as vagas 1 a 40 à mão (`A` ou `N`).
 - `rotular_extra.md` — mesma tabela para as vagas extras (41 em diante).
+- `avaliar.py` — roda o agente sobre um CSV rotulado e grava os resultados (`resultados_wwr.csv`); com `--retomar`, reaproveita as decisões já gravadas e só roda as vagas sem decisão.
+- `coletar_backendbr.py` — coleta a segunda fonte (issues do backend-br/vagas), `vagas_backendbr.csv` e `rotular_backendbr.md`.
+
+## Segunda fonte: backend-br/vagas (GitHub)
+
+O conjunto do We Work Remotely ficou sem nenhuma vaga "aplicar" (59 "não aplicar"), o que
+impede medir precisão e recall. Para ter positivos, uma segunda fonte, em CSV separado:
+
+- **Fonte:** issues abertas do repositório [backend-br/vagas](https://github.com/backend-br/vagas),
+  via `gh api` (ou a API pública, sem token, se o `gh` não estiver logado).
+- **Data da coleta:** 2026-10-31.
+- **Filtro:** issues (pull requests ficam de fora) com "python" no título ou nos labels, sem
+  diferenciar maiúsculas, das mais recentes para as mais antigas, até 25. O repositório tinha 45
+  issues abertas na coleta; 21 passaram no filtro.
+- **Formato:** o mesmo que o agente recebe: título + primeiros 300 caracteres do corpo, com
+  a limpeza de `src/triagem/feed.py` (tags HTML removidas, espaços normalizados). O corpo é
+  markdown, que a limpeza não converte.
+- **Arquivos:** `vagas_backendbr.csv` (`veredito_esperado` vazio até a rotulagem) e
+  `rotular_backendbr.md`, numerado a partir de 60.
