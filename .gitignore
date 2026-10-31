@@ -12,3 +12,4 @@ venv/
 .vscode/
 .pytest_cache/
 .ruff_cache/
+eval/rotular*.md

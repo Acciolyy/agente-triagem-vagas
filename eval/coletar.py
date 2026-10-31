@@ -109,7 +109,7 @@ def escrever_csv(vagas: list[dict]) -> None:
             escritor.writerow({**vaga, "veredito_esperado": ""})
 
 
-def escrever_rotular(vagas: list[dict]) -> None:
+def escrever_rotular(vagas: list[dict], arquivo: str = "rotular.md", inicio: int = 1) -> None:
     linhas = [
         "# Rotulagem",
         "",
@@ -120,16 +120,18 @@ def escrever_rotular(vagas: list[dict]) -> None:
         "| Link | Meu veredito |",
         "|---|---|---|---|---|---|",
     ]
-    for numero, vaga in enumerate(vagas, start=1):
+    for numero, vaga in enumerate(vagas, start=inicio):
         recebido = f"{vaga['titulo']} — {vaga['descricao']}"
         linhas.append(
             f"| {numero} | {celula(vaga['titulo'])} | {celula(empresa_do_titulo(vaga['titulo']))} "
             f"| {celula(recebido)} | {vaga['link']} |  |"
         )
-    (RAIZ / "eval" / "rotular.md").write_text("\n".join(linhas) + "\n", encoding="utf-8")
+    (RAIZ / "eval" / arquivo).write_text("\n".join(linhas) + "\n", encoding="utf-8")
 
 
 def main():
+    if (RAIZ / "eval" / "vagas.csv").exists():
+        sys.exit("eval/vagas.csv já existe; apague-o antes (perderia os rótulos).")
     distintas = juntar(FEEDS_PRINCIPAIS)
     if len(distintas) < MINIMO_SEM_EXTRA:
         print(f"Só {len(distintas)} vagas distintas; incluindo o feed de devops.")
