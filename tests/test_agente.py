@@ -43,7 +43,9 @@ def test_loop_busca_avalia_e_devolve_lista_de_avaliacoes(mock_feed, feed_xml):
             resposta_modelo(chamada("buscar_vagas_wwr", termo_busca="django")),
             resposta_modelo(
                 avaliar("Acme: Backend Engineer", "https://exemplo.test/vagas/acme-backend-engineer"),
-                avaliar("Globex: Python Developer", "https://exemplo.test/g", "não aplicar", "sênior"),
+                avaliar(
+                    "Globex: Python Developer", "https://exemplo.test/g", "não aplicar", "sênior"
+                ),
             ),
             resposta_modelo(types.Part(text="Resumo final.")),
         ]

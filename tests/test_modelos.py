@@ -5,7 +5,12 @@ from src.triagem.modelos import Avaliacao
 
 
 def avaliacao(**campos):
-    base = {"titulo": "Vaga", "link": "https://exemplo.test/v", "veredito": "aplicar", "motivo": "ok"}
+    base = {
+        "titulo": "Vaga",
+        "link": "https://exemplo.test/v",
+        "veredito": "aplicar",
+        "motivo": "ok",
+    }
     return Avaliacao(**{**base, **campos})
 
 

@@ -130,7 +130,9 @@ def montar_system_prompt(criterios_texto: str) -> str:
     return SYSTEM_PROMPT_TEMPLATE.format(criterios=criterios_texto.strip())
 
 
-def rodar_triagem(client: genai.Client, config: types.GenerateContentConfig, termo: str, on_texto=None):
+def rodar_triagem(
+    client: genai.Client, config: types.GenerateContentConfig, termo: str, on_texto=None
+):
     """Roda o loop de conversa com function calling para triar vagas do termo dado.
 
     on_texto, se fornecido, é chamado com cada trecho de texto narrado pelo modelo
