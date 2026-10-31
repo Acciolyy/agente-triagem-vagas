@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Vagas Fictícias - Programação</title>
+    <link>https://exemplo.test/programacao</link>
+    <description>Feed de exemplo para testes</description>
+    <item>
+      <title>Acme: Backend Engineer</title>
+      <link>https://exemplo.test/vagas/acme-backend-engineer</link>
+      <description>&lt;p&gt;Trabalhe com &lt;b&gt;Django&lt;/b&gt; e APIs REST em time remoto.&lt;/p&gt;</description>
+      <category>Back-End Programming</category>
+    </item>
+    <item>
+      <title>Globex: Senior PYTHON Developer</title>
+      <link>https://exemplo.test/vagas/globex-senior-python</link>
+      <description>&lt;p&gt;Liderar serviços de dados.&lt;/p&gt;</description>
+      <category>Back-End Programming</category>
+    </item>
+    <item>
+      <title>Initech: Frontend Developer</title>
+      <link>https://exemplo.test/vagas/initech-frontend</link>
+      <description>&lt;p&gt;Interfaces com React e TypeScript.&lt;/p&gt;</description>
+      <category>Front-End Programming</category>
+    </item>
+    <item>
+      <title>Umbrella: QA Engineer</title>
+      <link>https://exemplo.test/vagas/umbrella-qa</link>
+      <description>&lt;p&gt;Automação de testes de ponta a ponta.&lt;/p&gt;</description>
+      <category>Quality Assurance</category>
+      <category>Rust</category>
+    </item>
+    <item>
+      <title>Hooli: DevOps Engineer</title>
+      <link>https://exemplo.test/vagas/hooli-devops</link>
+      <description>&lt;p&gt;Pipelines de CI/CD, Kubernetes e infraestrutura como código.&lt;/p&gt;</description>
+      <category>DevOps and Sysadmin</category>
+    </item>
+  </channel>
+</rss>
