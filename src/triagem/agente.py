@@ -2,9 +2,11 @@
 
 from google import genai
 from google.genai import types
+from pydantic import ValidationError
 
-from .config import MAX_TOOL_ITERATIONS, MODEL, VEREDITOS_VALIDOS
+from .config import MAX_TOOL_ITERATIONS, MODEL
 from .feed import buscar_vagas_wwr
+from .modelos import Avaliacao
 
 SYSTEM_PROMPT_TEMPLATE = """Você é um agente de triagem de vagas de emprego remotas.
 
@@ -96,24 +98,23 @@ AVALIAR_VAGA_DECLARATION = types.FunctionDeclaration(
 TOOLS = types.Tool(function_declarations=[BUSCAR_VAGAS_DECLARATION, AVALIAR_VAGA_DECLARATION])
 
 
-def avaliar_vaga(titulo: str, descricao_ou_tags: str, link: str, veredito: str, motivo: str):
-    """Formata e registra a decisão que o modelo já tomou sobre uma vaga."""
-    veredito_normalizado = veredito.strip().lower()
-    if veredito_normalizado not in VEREDITOS_VALIDOS:
+def avaliar_vaga(**argumentos):
+    """Valida a decisão que o modelo já tomou sobre uma vaga.
+
+    Retorna a Avaliacao, ou um dict de erro de ferramenta se os argumentos forem inválidos.
+    """
+    try:
+        return Avaliacao.model_validate(argumentos)
+    except ValidationError as erro:
+        detalhes = "; ".join(
+            f"{'.'.join(str(parte) for parte in e['loc'])}: {e['msg']}" for e in erro.errors()
+        )
         return {
             "erro": (
-                f"Veredito inválido: '{veredito}'. "
-                "Use exatamente 'aplicar' ou 'não aplicar'."
+                f"Argumentos inválidos para avaliar_vaga ({detalhes}). "
+                "Use veredito exatamente 'aplicar' ou 'não aplicar' e um motivo não vazio."
             )
         }
-
-    return {
-        "titulo": titulo,
-        "contexto": descricao_ou_tags,
-        "link": link,
-        "veredito": veredito_normalizado,
-        "motivo": motivo,
-    }
 
 
 def executar_function(nome: str, args: dict):
@@ -136,7 +137,7 @@ def rodar_triagem(client: genai.Client, config: types.GenerateContentConfig, ter
     assim que ele chega (útil para feedback em tempo real na CLI).
 
     Retorna (avaliacoes, atingiu_limite):
-    - avaliacoes: lista de dicts retornados por avaliar_vaga (sem erro de veredito)
+    - avaliacoes: list[Avaliacao] com as decisões válidas registradas por avaliar_vaga
     - atingiu_limite: True se o loop foi interrompido por MAX_TOOL_ITERATIONS sem o
       modelo finalizar a triagem
     """
@@ -195,8 +196,9 @@ def rodar_triagem(client: genai.Client, config: types.GenerateContentConfig, ter
             except Exception as erro:
                 resultado = {"erro": f"Falha ao executar '{chamada.name}': {erro}"}
 
-            if chamada.name == "avaliar_vaga" and "erro" not in resultado:
+            if isinstance(resultado, Avaliacao):
                 avaliacoes.append(resultado)
+                resultado = resultado.model_dump()
 
             response_parts.append(
                 types.Part.from_function_response(

@@ -6,6 +6,7 @@ import feedparser
 import requests
 
 from .config import LIMITE_RESULTADOS, TAMANHO_MAX_DESCRICAO, WWR_RSS_URL
+from .modelos import Vaga
 
 
 def _limpar_html(html_ou_texto: str) -> str:
@@ -56,13 +57,12 @@ def buscar_vagas_wwr(termo_busca: str):
         descricao_encontrada = termo in descricao_limpa.lower()
 
         if titulo_encontrado or tags_encontrado or descricao_encontrada:
-            resultados.append(
-                {
-                    "titulo": titulo,
-                    "link": getattr(entrada, "link", "N/A"),
-                    "descricao": _truncar(descricao_limpa) or "N/A",
-                }
+            vaga = Vaga(
+                titulo=titulo,
+                link=getattr(entrada, "link", "N/A"),
+                descricao=_truncar(descricao_limpa) or "N/A",
             )
+            resultados.append(vaga.model_dump())
 
         if len(resultados) >= LIMITE_RESULTADOS:
             break

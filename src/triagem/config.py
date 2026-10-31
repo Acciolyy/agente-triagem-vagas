@@ -14,7 +14,6 @@ MAX_TOOL_ITERATIONS = 20
 WWR_RSS_URL = "https://weworkremotely.com/categories/remote-programming-jobs.rss"
 LIMITE_RESULTADOS = 15
 TAMANHO_MAX_DESCRICAO = 300
-VEREDITOS_VALIDOS = {"aplicar", "não aplicar"}
 CRITERIOS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "criterios.txt",

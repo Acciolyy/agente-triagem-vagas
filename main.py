@@ -26,8 +26,8 @@ def imprimir_resultado_final(avaliacoes: list):
         print("\nNenhuma vaga foi avaliada nesta execução.")
         return
 
-    aplicar = [a for a in avaliacoes if a["veredito"] == "aplicar"]
-    nao_aplicar = [a for a in avaliacoes if a["veredito"] == "não aplicar"]
+    aplicar = [a for a in avaliacoes if a.veredito == "aplicar"]
+    nao_aplicar = [a for a in avaliacoes if a.veredito == "não aplicar"]
 
     print("\n" + "=" * 60)
     print(f"RESULTADO DA TRIAGEM ({len(avaliacoes)} vaga(s) avaliada(s))")
@@ -37,17 +37,17 @@ def imprimir_resultado_final(avaliacoes: list):
     if not aplicar:
         print("  (nenhuma)")
     for vaga in aplicar:
-        print(f"  - {vaga['titulo']}")
-        print(f"    Link: {vaga.get('link', 'N/A')}")
-        print(f"    Motivo: {vaga['motivo']}")
+        print(f"  - {vaga.titulo}")
+        print(f"    Link: {vaga.link}")
+        print(f"    Motivo: {vaga.motivo}")
 
     print(f"\n>> Vagas para NÃO aplicar ({len(nao_aplicar)}):")
     if not nao_aplicar:
         print("  (nenhuma)")
     for vaga in nao_aplicar:
-        print(f"  - {vaga['titulo']}")
-        print(f"    Link: {vaga.get('link', 'N/A')}")
-        print(f"    Motivo: {vaga['motivo']}")
+        print(f"  - {vaga.titulo}")
+        print(f"    Link: {vaga.link}")
+        print(f"    Motivo: {vaga.motivo}")
 
     print()
 

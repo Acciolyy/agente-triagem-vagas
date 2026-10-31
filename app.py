@@ -29,8 +29,8 @@ def renderizar_resultados(avaliacoes: list):
         st.info("Nenhuma vaga foi avaliada.")
         return
 
-    aplicar = [vaga for vaga in avaliacoes if vaga["veredito"] == "aplicar"]
-    nao_aplicar = [vaga for vaga in avaliacoes if vaga["veredito"] == "não aplicar"]
+    aplicar = [vaga for vaga in avaliacoes if vaga.veredito == "aplicar"]
+    nao_aplicar = [vaga for vaga in avaliacoes if vaga.veredito == "não aplicar"]
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Total de vagas", len(avaliacoes))
@@ -40,14 +40,14 @@ def renderizar_resultados(avaliacoes: list):
     st.divider()
 
     for vaga in avaliacoes:
-        if vaga["veredito"] == "aplicar":
+        if vaga.veredito == "aplicar":
             icone, cor_fundo, cor_borda = "✅", "#e6f4ea", "#34a853"
         else:
             icone, cor_fundo, cor_borda = "❌", "#fce8e6", "#ea4335"
 
-        link = vaga.get("link") or ""
+        link = vaga.link or ""
         titulo_html = (
-            f'<a href="{link}" target="_blank">{vaga["titulo"]}</a>' if link else vaga["titulo"]
+            f'<a href="{link}" target="_blank">{vaga.titulo}</a>' if link else vaga.titulo
         )
 
         st.markdown(
@@ -55,7 +55,7 @@ def renderizar_resultados(avaliacoes: list):
             <div style="background-color:{cor_fundo}; border-left:4px solid {cor_borda};
                         padding:0.85rem 1rem; border-radius:0.4rem; margin-bottom:0.75rem;">
                 <div style="font-weight:600; font-size:1.05rem;">{icone} {titulo_html}</div>
-                <div style="margin-top:0.35rem;"><strong>Motivo:</strong> {vaga['motivo']}</div>
+                <div style="margin-top:0.35rem;"><strong>Motivo:</strong> {vaga.motivo}</div>
             </div>
             """,
             unsafe_allow_html=True,
