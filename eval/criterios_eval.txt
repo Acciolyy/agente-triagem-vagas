@@ -1,0 +1,1 @@
+O candidato busca vagas de nível júnior ou pleno. As posições devem usar Python no backend, com Django, FastAPI ou Flask, ou atuar com dados e inteligência artificial usando Python. É aceitável que a vaga exija inglês de nível intermediário ou avançado. A vaga precisa ser remota e aceitar candidatos que morem fora dos Estados Unidos.
