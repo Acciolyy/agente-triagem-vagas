@@ -4,3 +4,11 @@
 .streamlit/
 __pycache__/
 criterios.txt
+
+# IDE / cache
+.venv/
+venv/
+.idea/
+.vscode/
+.pytest_cache/
+.ruff_cache/

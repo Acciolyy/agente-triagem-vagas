@@ -1,25 +1,27 @@
 """
 Interface web (Streamlit) para o agente de triagem de vagas remotas.
 
-Não duplica lógica: reaproveita as funções e constantes definidas em main.py
-(busca no We Work Remotely, avaliação via function calling, critérios de
-triagem). Este arquivo só cuida da apresentação (formulário, spinner, cards).
+Não duplica lógica: reaproveita o pacote src/triagem (busca no We Work
+Remotely, avaliação via function calling, critérios de triagem). Este
+arquivo só cuida da apresentação (formulário, spinner, cards).
 
 Rodar com: streamlit run app.py
 """
 
-import os
-
 import streamlit as st
+from google import genai
+from google.genai import errors, types
 
-import main
+from src.triagem.agente import TOOLS, montar_system_prompt, rodar_triagem
+from src.triagem.config import MAX_TOOL_ITERATIONS, obter_api_key
+from src.triagem.criterios import carregar_criterios, gerar_resumo_criterios, salvar_criterios
 
 st.set_page_config(page_title="Agente de Triagem de Vagas Remotas", layout="centered")
 
 
 @st.cache_resource
 def obter_client(api_key: str):
-    return main.genai.Client(api_key=api_key)
+    return genai.Client(api_key=api_key)
 
 
 def renderizar_resultados(avaliacoes: list):
@@ -60,7 +62,7 @@ def renderizar_resultados(avaliacoes: list):
         )
 
 
-api_key = os.environ.get("GEMINI_API_KEY")
+api_key = obter_api_key()
 if not api_key:
     st.error(
         "Variável de ambiente GEMINI_API_KEY não definida. Copie .env.example "
@@ -71,7 +73,7 @@ if not api_key:
 client = obter_client(api_key)
 
 if "criterios_texto" not in st.session_state:
-    st.session_state["criterios_texto"] = main.carregar_criterios() or ""
+    st.session_state["criterios_texto"] = carregar_criterios() or ""
 
 st.title("Agente de Triagem de Vagas Remotas")
 st.caption("Busca vagas no We Work Remotely e avalia cada uma com o Gemini.")
@@ -109,11 +111,11 @@ with st.sidebar:
             }
             with st.spinner("Formatando critérios com o Gemini..."):
                 try:
-                    criterios_texto = main.gerar_resumo_criterios(client, respostas)
+                    criterios_texto = gerar_resumo_criterios(client, respostas)
                 except Exception as erro:
                     st.error(f"Falha ao formatar critérios: {erro}")
                     st.stop()
-            main.salvar_criterios(criterios_texto)
+            salvar_criterios(criterios_texto)
             st.session_state["criterios_texto"] = criterios_texto
             st.success("Critérios salvos!")
             st.rerun()
@@ -127,15 +129,15 @@ if buscar_clicado:
     elif not termo.strip():
         st.warning("Informe um termo de busca.")
     else:
-        config = main.types.GenerateContentConfig(
-            system_instruction=main.montar_system_prompt(st.session_state["criterios_texto"]),
-            tools=[main.TOOLS],
+        config = types.GenerateContentConfig(
+            system_instruction=montar_system_prompt(st.session_state["criterios_texto"]),
+            tools=[TOOLS],
         )
 
         with st.spinner("Buscando e avaliando vagas..."):
             try:
-                avaliacoes, atingiu_limite = main.rodar_triagem(client, config, termo.strip())
-            except main.errors.APIError as erro:
+                avaliacoes, atingiu_limite = rodar_triagem(client, config, termo.strip())
+            except errors.APIError as erro:
                 st.error(f"Erro da API do Gemini ({erro.code}): {erro.message}")
                 avaliacoes = None
             except Exception as erro:
@@ -145,7 +147,7 @@ if buscar_clicado:
         if avaliacoes is not None:
             if atingiu_limite:
                 st.warning(
-                    f"Número máximo de iterações ({main.MAX_TOOL_ITERATIONS}) atingido "
+                    f"Número máximo de iterações ({MAX_TOOL_ITERATIONS}) atingido "
                     "antes do modelo finalizar a triagem."
                 )
             renderizar_resultados(avaliacoes)
