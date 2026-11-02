@@ -115,6 +115,11 @@ respostas vazias ou bloqueadas, XML inválido do feed e erros ao executar as fer
 últimos, e argumentos inválidos de `avaliar_vaga`, voltam ao modelo como resultado de erro de
 ferramenta, sem derrubar o programa.
 
+As chamadas ao Gemini têm timeout de 60 s. O estouro do timeout e os erros transitórios da API
+(429, 500, 503 e 504) são tentados de novo, até 4 vezes, com espera crescente; se todas falharem,
+a interface e o terminal mostram uma mensagem clara. Na avaliação (`eval/avaliar.py`), o lote que
+falha fica como "sem decisão" e pode ser retomado com `--retomar`.
+
 ## Limitação conhecida
 
 O feed RSS de programação do We Work Remotely traz apenas as cerca de 25 vagas mais recentes da
