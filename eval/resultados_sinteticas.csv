@@ -1,0 +1,17 @@
+titulo,link,veredito_esperado,veredito_agente,motivo,acerto
+Marlowe Quay: Python Data Engineer,https://vagas-ficticias.example/p5-b,não aplicar,não aplicar,A vaga exige residência obrigatória nos Estados Unidos.,True
+Tapioca Dados: Engenheiro(a) de Dados,https://vagas-ficticias.example/p4-a,aplicar,aplicar,Vaga remota mundial de nível pleno para dados e inteligência artificial em Python.,True
+Zorvane: Desenvolvedor(a) Python,https://vagas-ficticias.example/p2-a,aplicar,aplicar,Vaga remota a nível mundial para desenvolvedor pleno em Python com Django.,True
+Velkor: Backend Developer,https://vagas-ficticias.example/p7-b,não aplicar,não aplicar,"A vaga é para Java e Spring Boot, não atendendo à stack de Python ou dados/IA.",True
+Jabuti Digital: Desenvolvedor(a) Python Pleno,https://vagas-ficticias.example/p8-b,não aplicar,não aplicar,"A vaga não é 100% remota, exigindo comparecimento híbrido em São Paulo.",True
+Fennimore Labs: Machine Learning Engineer,https://vagas-ficticias.example/p3-a,aplicar,aplicar,Vaga remota mundial de nível pleno para Machine Learning com Python.,True
+Pitanga Systems: Desenvolvedor(a) Python Pleno,https://vagas-ficticias.example/p6-b,não aplicar,não aplicar,A vaga é restrita exclusivamente a residentes nos Estados Unidos.,True
+Quillbrook: Python Backend Developer,https://vagas-ficticias.example/p1-a,aplicar,aplicar,Vaga remota mundial de nível pleno em Python com FastAPI.,True
+Tapioca Dados: Engenheiro(a) de Dados,https://vagas-ficticias.example/p4-b,não aplicar,aplicar,Vaga remota mundial de nível pleno para dados e inteligência artificial com inglês intermediário.,False
+Fennimore Labs: Machine Learning Engineer,https://vagas-ficticias.example/p3-b,não aplicar,aplicar,Posição remota mundial de nível pleno focada em Machine Learning/IA com inglês intermediário.,False
+Jabuti Digital: Desenvolvedor(a) Python Pleno,https://vagas-ficticias.example/p8-a,aplicar,aplicar,"Vaga de nível pleno com FastAPI, 100% remota no Brasil e inglês intermediário.",True
+Pitanga Systems: Desenvolvedor(a) Python Pleno,https://vagas-ficticias.example/p6-a,aplicar,aplicar,"Vaga de nível pleno em backend com Flask, remota e aberta a candidatos fora dos EUA.",True
+Velkor: Backend Developer,https://vagas-ficticias.example/p7-a,aplicar,aplicar,Vaga remota mundial de nível pleno com backend em Django e inglês intermediário.,True
+Marlowe Quay: Python Data Engineer,https://vagas-ficticias.example/p5-a,aplicar,aplicar,Vaga remota mundial de nível pleno para dados e IA com Python e inglês avançado.,True
+Quillbrook: Python Backend Developer,https://vagas-ficticias.example/p1-b,não aplicar,não aplicar,"A vaga exige liderança de times backend (nível Lead/Sênior), acima do perfil júnior/pleno buscado.",True
+Zorvane: Desenvolvedor(a) Python,https://vagas-ficticias.example/p2-b,não aplicar,não aplicar,"Posição voltada para nível Staff/Sênior (8+ anos de experiência), incompatível com o foco júnior/pleno.",True
