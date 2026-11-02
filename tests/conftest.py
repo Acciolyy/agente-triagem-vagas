@@ -34,7 +34,10 @@ def resposta_modelo(*partes: types.Part) -> SimpleNamespace:
 
 
 class ClienteFalso:
-    """Cliente Gemini falso: devolve as respostas pré-definidas em ordem e guarda as chamadas."""
+    """Cliente Gemini falso: devolve as respostas pré-definidas em ordem e guarda as chamadas.
+
+    Se um item da lista for uma exceção, ela é levantada em vez de devolvida.
+    """
 
     def __init__(self, respostas):
         self._respostas = iter(respostas)
@@ -43,4 +46,7 @@ class ClienteFalso:
 
     def generate_content(self, model, contents, config=None):
         self.contents_recebidos.append(list(contents))
-        return next(self._respostas)
+        resposta = next(self._respostas)
+        if isinstance(resposta, Exception):
+            raise resposta
+        return resposta

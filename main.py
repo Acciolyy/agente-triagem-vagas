@@ -13,10 +13,15 @@ de comando (python main.py <termo>).
 
 import sys
 
-from google import genai
 from google.genai import errors, types
 
-from src.triagem.agente import TOOLS, montar_system_prompt, rodar_triagem
+from src.triagem.agente import (
+    TOOLS,
+    TimeoutGemini,
+    criar_client,
+    montar_system_prompt,
+    rodar_triagem,
+)
 from src.triagem.config import MAX_TOOL_ITERATIONS, obter_api_key
 from src.triagem.criterios import obter_criterios_interativo
 
@@ -61,7 +66,7 @@ def main():
         )
         sys.exit(1)
 
-    client = genai.Client(api_key=api_key)
+    client = criar_client(api_key)
 
     criterios_texto = obter_criterios_interativo(client)
 
@@ -79,8 +84,15 @@ def main():
 
     try:
         avaliacoes, atingiu_limite = rodar_triagem(
-            client, config, termo, on_texto=lambda texto: print(f"\n[Gemini] {texto}")
+            client,
+            config,
+            termo,
+            on_texto=lambda texto: print(f"\n[Gemini] {texto}"),
+            on_aviso=lambda aviso: print(f"\n[aviso] {aviso}"),
         )
+    except TimeoutGemini as erro:
+        print(f"{erro} Tente novamente em instantes.")
+        sys.exit(1)
     except errors.APIError as erro:
         print(f"Erro da API do Gemini ({erro.code}): {erro.message}")
         sys.exit(1)

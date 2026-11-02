@@ -11,6 +11,10 @@ except ImportError:
 
 MODEL = "gemini-flash-latest"
 MAX_TOOL_ITERATIONS = 20
+TIMEOUT_API_S = 60
+TENTATIVAS_API = 4
+ESPERA_BASE_S = 10
+CODIGOS_TRANSITORIOS = (429, 500, 503, 504)
 WWR_RSS_URL = "https://weworkremotely.com/categories/remote-programming-jobs.rss"
 LIMITE_RESULTADOS = 15
 TAMANHO_MAX_DESCRICAO = 300

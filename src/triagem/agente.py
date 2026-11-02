@@ -1,10 +1,20 @@
 """Agente: declaração das ferramentas, system prompt e loop de function calling."""
 
+import time
+
+import httpx
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 from pydantic import ValidationError
 
-from .config import MAX_TOOL_ITERATIONS, MODEL
+from .config import (
+    CODIGOS_TRANSITORIOS,
+    ESPERA_BASE_S,
+    MAX_TOOL_ITERATIONS,
+    MODEL,
+    TENTATIVAS_API,
+    TIMEOUT_API_S,
+)
 from .feed import buscar_vagas_wwr
 from .modelos import Avaliacao
 
@@ -130,13 +140,65 @@ def montar_system_prompt(criterios_texto: str) -> str:
     return SYSTEM_PROMPT_TEMPLATE.format(criterios=criterios_texto.strip())
 
 
+class TimeoutGemini(Exception):
+    """A API do Gemini não respondeu dentro do timeout, em todas as tentativas."""
+
+
+def criar_client(api_key: str) -> genai.Client:
+    """Cria o cliente do Gemini com timeout por requisição (TIMEOUT_API_S)."""
+    return genai.Client(
+        api_key=api_key, http_options=types.HttpOptions(timeout=TIMEOUT_API_S * 1000)
+    )
+
+
+def _gerar_conteudo(client, contents, config, tentativas, espera_base, on_aviso=None):
+    """generate_content com nova tentativa e espera crescente em erros recuperáveis.
+
+    São recuperáveis o estouro do timeout e os erros transitórios da API
+    (CODIGOS_TRANSITORIOS). Na última tentativa, o erro é levantado: TimeoutGemini para
+    timeout, ou o próprio errors.APIError.
+    """
+    for tentativa in range(1, tentativas + 1):
+        try:
+            return client.models.generate_content(model=MODEL, contents=contents, config=config)
+        except httpx.TimeoutException as erro:
+            falha = TimeoutGemini(
+                f"A API do Gemini não respondeu em {TIMEOUT_API_S} s "
+                f"({tentativas} tentativa(s))."
+            )
+            falha.__cause__ = erro
+            descricao = f"sem resposta em {TIMEOUT_API_S} s"
+        except errors.APIError as erro:
+            if erro.code not in CODIGOS_TRANSITORIOS:
+                raise
+            falha = erro
+            descricao = f"erro {erro.code}"
+
+        if tentativa == tentativas:
+            raise falha
+        espera = espera_base * tentativa
+        if on_aviso:
+            on_aviso(f"API: {descricao}; nova tentativa em {espera}s ({tentativa}/{tentativas}).")
+        time.sleep(espera)
+
+
 def rodar_triagem(
-    client: genai.Client, config: types.GenerateContentConfig, termo: str, on_texto=None
+    client: genai.Client,
+    config: types.GenerateContentConfig,
+    termo: str,
+    on_texto=None,
+    on_aviso=None,
+    tentativas: int = TENTATIVAS_API,
+    espera_base: float = ESPERA_BASE_S,
 ):
     """Roda o loop de conversa com function calling para triar vagas do termo dado.
 
     on_texto, se fornecido, é chamado com cada trecho de texto narrado pelo modelo
     assim que ele chega (útil para feedback em tempo real na CLI).
+
+    Cada chamada ao modelo tenta de novo, com espera crescente, em timeout ou erro
+    transitório da API (on_aviso, se fornecido, recebe o aviso de cada nova tentativa).
+    Esgotadas as tentativas, levanta TimeoutGemini (timeout) ou errors.APIError.
 
     Retorna (avaliacoes, atingiu_limite):
     - avaliacoes: list[Avaliacao] com as decisões válidas registradas por avaliar_vaga
@@ -162,11 +224,7 @@ def rodar_triagem(
     atingiu_limite = True
 
     for _ in range(MAX_TOOL_ITERATIONS):
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=contents,
-            config=config,
-        )
+        response = _gerar_conteudo(client, contents, config, tentativas, espera_base, on_aviso)
 
         if not response.candidates:
             if on_texto:

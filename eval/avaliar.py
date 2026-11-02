@@ -23,10 +23,8 @@ nas vagas sem decisão. Os resultados são regravados a cada lote concluído.
 
 import csv
 import sys
-import time
 from pathlib import Path
 
-from google import genai
 from google.genai import errors, types
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -37,6 +35,7 @@ from src.triagem.config import LIMITE_RESULTADOS, obter_api_key  # noqa: E402
 
 CRITERIOS = RAIZ / "eval" / "criterios_eval.txt"
 TENTATIVAS = 6
+ESPERA_BASE = 30
 COLUNAS = [
     "titulo", "link", "veredito_esperado", "veredito_agente", "motivo", "acerto",
 ]
@@ -52,23 +51,22 @@ def ler_vagas(caminho: Path) -> list[dict]:
 
 
 def triar_lote(client, config, lote: list[dict]) -> list:
-    """Roda o agente sobre um lote de vagas, com nova tentativa em erros transitórios da API."""
+    """Roda o agente sobre um lote de vagas, com nova tentativa em timeout e erros transitórios."""
     dados = [{k: v[k] for k in ("titulo", "link", "descricao")} for v in lote]
     original = agente.buscar_vagas_wwr
     agente.buscar_vagas_wwr = lambda termo_busca: dados
     try:
-        for tentativa in range(1, TENTATIVAS + 1):
-            try:
-                avaliacoes, atingiu_limite = agente.rodar_triagem(client, config, "python")
-                if atingiu_limite:
-                    print("  aviso: limite de iterações atingido neste lote.")
-                return avaliacoes
-            except errors.APIError as erro:
-                if tentativa == TENTATIVAS or erro.code not in (429, 500, 503):
-                    raise
-                espera = 30 * tentativa
-                print(f"  API {erro.code}; nova tentativa em {espera}s ({tentativa}/{TENTATIVAS}).")
-                time.sleep(espera)
+        avaliacoes, atingiu_limite = agente.rodar_triagem(
+            client,
+            config,
+            "python",
+            on_aviso=lambda aviso: print(f"  {aviso}"),
+            tentativas=TENTATIVAS,
+            espera_base=ESPERA_BASE,
+        )
+        if atingiu_limite:
+            print("  aviso: limite de iterações atingido neste lote.")
+        return avaliacoes
     finally:
         agente.buscar_vagas_wwr = original
 
@@ -121,7 +119,7 @@ def dividir_em_lotes(vagas: list[dict]) -> list[list[dict]]:
 
 
 def avaliar(vagas: list[dict], saida: Path, anteriores: dict) -> list[dict]:
-    client = genai.Client(api_key=obter_api_key())
+    client = agente.criar_client(obter_api_key())
     config = types.GenerateContentConfig(
         system_instruction=agente.montar_system_prompt(CRITERIOS.read_text(encoding="utf-8")),
         tools=[agente.TOOLS],
@@ -134,8 +132,9 @@ def avaliar(vagas: list[dict], saida: Path, anteriores: dict) -> list[dict]:
         print(f"Lote {numero}: {len(lote)} vagas")
         try:
             avaliacoes = triar_lote(client, config, lote)
-        except errors.APIError as erro:
-            print(f"  lote abandonado após erro da API ({erro.code}); fica sem decisão.")
+        except (errors.APIError, agente.TimeoutGemini) as erro:
+            codigo = getattr(erro, "code", "timeout")
+            print(f"  lote abandonado após erro da API ({codigo}); fica sem decisão.")
             continue
         for avaliacao in avaliacoes:
             decisoes[avaliacao.link] = avaliacao

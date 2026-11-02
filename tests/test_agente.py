@@ -1,7 +1,16 @@
-from google.genai import types
+import httpx
+import pytest
+from google.genai import errors, types
 
-from src.triagem.agente import TOOLS, avaliar_vaga, executar_function, rodar_triagem
-from src.triagem.config import MAX_TOOL_ITERATIONS
+from src.triagem.agente import (
+    TOOLS,
+    TimeoutGemini,
+    avaliar_vaga,
+    criar_client,
+    executar_function,
+    rodar_triagem,
+)
+from src.triagem.config import MAX_TOOL_ITERATIONS, TIMEOUT_API_S
 from src.triagem.modelos import Avaliacao
 from tests.conftest import ClienteFalso, chamada, resposta_modelo
 
@@ -150,3 +159,82 @@ def test_avaliar_vaga_e_executar_function_validam_com_o_modelo():
 
     assert executar_function("avaliar_vaga", argumentos) == avaliar_vaga(**argumentos)
     assert "erro" in executar_function("avaliar_vaga", {**argumentos, "veredito": "x"})
+
+
+# --- timeout e novas tentativas ----------------------------------------------
+
+
+@pytest.fixture
+def sem_espera(mocker):
+    return mocker.patch("src.triagem.agente.time.sleep")
+
+
+def erro_api(codigo):
+    return errors.APIError(codigo, {"error": {"message": "falha simulada"}})
+
+
+def test_client_e_criado_com_timeout():
+    assert criar_client("chave")._api_client._http_options.timeout == TIMEOUT_API_S * 1000
+
+
+def test_timeout_e_tentado_de_novo_com_espera_e_aviso(sem_espera):
+    cliente = ClienteFalso(
+        [
+            httpx.ReadTimeout("sem resposta"),
+            resposta_modelo(avaliar("Vaga", "https://exemplo.test/v")),
+            resposta_modelo(types.Part(text="fim")),
+        ]
+    )
+    avisos = []
+
+    avaliacoes, atingiu_limite = rodar_triagem(
+        cliente, CONFIG, "python", on_aviso=avisos.append, espera_base=5
+    )
+
+    assert atingiu_limite is False
+    assert [a.titulo for a in avaliacoes] == ["Vaga"]
+    sem_espera.assert_called_once_with(5)
+    assert len(avisos) == 1 and "nova tentativa" in avisos[0]
+    # a requisição repetida é a mesma: o turno do usuário não foi duplicado
+    assert len(cliente.contents_recebidos[0]) == len(cliente.contents_recebidos[1]) == 1
+
+
+def test_timeout_em_todas_as_tentativas_levanta_timeout_gemini(sem_espera):
+    cliente = ClienteFalso([httpx.ReadTimeout("sem resposta")] * 3)
+
+    with pytest.raises(TimeoutGemini) as excecao:
+        rodar_triagem(cliente, CONFIG, "python", tentativas=3, espera_base=1)
+
+    assert len(cliente.contents_recebidos) == 3
+    assert [chamada.args[0] for chamada in sem_espera.call_args_list] == [1, 2]
+    assert isinstance(excecao.value.__cause__, httpx.ReadTimeout)
+    assert str(TIMEOUT_API_S) in str(excecao.value)
+
+
+@pytest.mark.parametrize("codigo", [429, 503, 504])
+def test_erro_transitorio_da_api_e_tentado_de_novo(sem_espera, codigo):
+    cliente = ClienteFalso([erro_api(codigo), resposta_modelo(types.Part(text="fim"))])
+
+    avaliacoes, atingiu_limite = rodar_triagem(cliente, CONFIG, "python")
+
+    assert (avaliacoes, atingiu_limite) == ([], False)
+    assert len(cliente.contents_recebidos) == 2
+
+
+def test_erro_transitorio_persistente_levanta_o_erro_da_api(sem_espera):
+    cliente = ClienteFalso([erro_api(503)] * 2)
+
+    with pytest.raises(errors.APIError) as excecao:
+        rodar_triagem(cliente, CONFIG, "python", tentativas=2)
+
+    assert excecao.value.code == 503
+
+
+def test_erro_nao_transitorio_nao_e_tentado_de_novo(sem_espera):
+    cliente = ClienteFalso([erro_api(400), resposta_modelo(types.Part(text="fim"))])
+
+    with pytest.raises(errors.APIError):
+        rodar_triagem(cliente, CONFIG, "python")
+
+    assert len(cliente.contents_recebidos) == 1
+    sem_espera.assert_not_called()

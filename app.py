@@ -9,10 +9,15 @@ Rodar com: streamlit run app.py
 """
 
 import streamlit as st
-from google import genai
 from google.genai import errors, types
 
-from src.triagem.agente import TOOLS, montar_system_prompt, rodar_triagem
+from src.triagem.agente import (
+    TOOLS,
+    TimeoutGemini,
+    criar_client,
+    montar_system_prompt,
+    rodar_triagem,
+)
 from src.triagem.config import MAX_TOOL_ITERATIONS, obter_api_key
 from src.triagem.criterios import carregar_criterios, gerar_resumo_criterios, salvar_criterios
 
@@ -21,7 +26,7 @@ st.set_page_config(page_title="Agente de Triagem de Vagas Remotas", layout="cent
 
 @st.cache_resource
 def obter_client(api_key: str):
-    return genai.Client(api_key=api_key)
+    return criar_client(api_key)
 
 
 def renderizar_resultados(avaliacoes: list):
@@ -137,6 +142,9 @@ if buscar_clicado:
         with st.spinner("Buscando e avaliando vagas..."):
             try:
                 avaliacoes, atingiu_limite = rodar_triagem(client, config, termo.strip())
+            except TimeoutGemini as erro:
+                st.error(f"{erro} Tente novamente em instantes.")
+                avaliacoes = None
             except errors.APIError as erro:
                 st.error(f"Erro da API do Gemini ({erro.code}): {erro.message}")
                 avaliacoes = None
